@@ -26,6 +26,10 @@
   .tbl-wrap { max-height:500px; overflow:auto;}
   .filter-bar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;}
   .filter-bar input { padding:8px 12px; border:1px solid #ddd; border-radius:6px; flex:1; min-width:200px; font-size:14px;}
+  .filter-bar select { padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; background:#fff; cursor:pointer;}
+  th.sortable { cursor:pointer; user-select:none;}
+  th.sortable:hover { background:#eef2f7;}
+  th.sortable .arrow { display:inline-block; width:10px; color:#3498db; font-weight:700;}
   .chip { background:#3498db; color:#fff; padding:4px 10px; border-radius:14px; font-size:12px; cursor:pointer;}
   .chip.clear { background:#e74c3c;}
   .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;}
@@ -98,12 +102,29 @@
     </h2>
     <div class="filter-bar">
       <input id="search" placeholder="חיפוש לפי תיאור, ספק, או מספר שובר…">
+      <select id="filterSupplier"><option value="">כל הספקים</option></select>
+      <select id="filterStatus">
+        <option value="">כל הסטטוסים</option>
+        <option value="ok">פעיל</option>
+        <option value="soon">פג בקרוב</option>
+        <option value="expired">פג תוקף</option>
+        <option value="used">נוצל</option>
+      </select>
+      <select id="filterYear"><option value="">כל השנים</option></select>
+      <button class="btn btn-secondary btn-sm" onclick="resetFilters()">נקה סינונים</button>
       <span id="activeFilter"></span>
     </div>
     <div class="tbl-wrap">
       <table id="tbl">
         <thead><tr>
-          <th>תיאור</th><th>ספק</th><th>שווי</th><th>נשאר</th><th>שולם</th><th>תוקף</th><th>סטטוס</th><th>פעולות</th>
+          <th class="sortable" data-sort="desc">תיאור <span class="arrow"></span></th>
+          <th class="sortable" data-sort="supplier">ספק <span class="arrow"></span></th>
+          <th class="sortable" data-sort="value">שווי <span class="arrow"></span></th>
+          <th class="sortable" data-sort="remaining">נשאר <span class="arrow"></span></th>
+          <th class="sortable" data-sort="spent">שולם <span class="arrow"></span></th>
+          <th class="sortable" data-sort="expiry">תוקף <span class="arrow"></span></th>
+          <th class="sortable" data-sort="status">סטטוס <span class="arrow"></span></th>
+          <th>פעולות</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -163,6 +184,7 @@ const today = new Date();
 
 let coupons = [];
 let filter = {type:null, value:null};
+let sortState = {key:null, dir:1};
 let charts = {};
 
 function status(msg, isError) {
@@ -198,6 +220,7 @@ async function loadData() {
       expiry: c.expiry ? String(c.expiry).slice(0,10) : '',
       purchased: c.purchased ? String(c.purchased).slice(0,10) : '',
     }));
+    populateFilterOptions();
     renderKpis(); renderCharts(); applyFilter();
     status('נטען ✓');
   } catch(e) { status('טעינה נכשלה: '+e.message, true); }
@@ -210,19 +233,66 @@ function renderKpis() {
   document.getElementById('kpiExpired').textContent = coupons.filter(c=>new Date(c.expiry)<today).length;
 }
 
+function statusKey(c) {
+  const d = new Date(c.expiry);
+  const days = (d - today)/(1000*60*60*24);
+  if (c.remaining === 0) return 'used';
+  if (days < 0) return 'expired';
+  if (days < 90) return 'soon';
+  return 'ok';
+}
+
 function applyFilter() {
   const q = (document.getElementById('search').value||'').toLowerCase();
+  const fSup = document.getElementById('filterSupplier').value;
+  const fStat = document.getElementById('filterStatus').value;
+  const fYear = document.getElementById('filterYear').value;
   let rows = coupons.filter(c => {
     if (q && !(String(c.desc).toLowerCase().includes(q) || String(c.supplier).toLowerCase().includes(q) || String(c.number).toLowerCase().includes(q))) return false;
+    if (fSup && c.supplier !== fSup) return false;
+    if (fStat && statusKey(c) !== fStat) return false;
+    if (fYear && String(new Date(c.expiry).getFullYear()) !== fYear) return false;
     if (filter.type === 'supplier' && c.supplier !== filter.value) return false;
     if (filter.type === 'year' && new Date(c.expiry).getFullYear() !== filter.value) return false;
     return true;
   });
+  if (sortState.key) {
+    const k = sortState.key, d = sortState.dir;
+    rows.sort((a,b) => {
+      let va = k === 'status' ? statusKey(a) : a[k];
+      let vb = k === 'status' ? statusKey(b) : b[k];
+      if (typeof va === 'number' && typeof vb === 'number') return (va-vb)*d;
+      return String(va||'').localeCompare(String(vb||''), 'he') * d;
+    });
+  }
   renderTable(rows);
   const af = document.getElementById('activeFilter');
-  af.innerHTML = filter.type ? `<span class="chip">סינון: ${filter.value}</span><span class="chip clear" onclick="clearFilter()">נקה ✕</span>` : '';
+  af.innerHTML = filter.type ? `<span class="chip">סינון גרף: ${filter.value}</span><span class="chip clear" onclick="clearFilter()">נקה ✕</span>` : '';
+  document.querySelectorAll('th.sortable').forEach(th => {
+    const arrow = th.querySelector('.arrow');
+    arrow.textContent = th.dataset.sort === sortState.key ? (sortState.dir===1 ? '▲' : '▼') : '';
+  });
 }
 function clearFilter() { filter={type:null,value:null}; applyFilter(); }
+function resetFilters() {
+  document.getElementById('search').value = '';
+  document.getElementById('filterSupplier').value = '';
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterYear').value = '';
+  filter = {type:null,value:null};
+  sortState = {key:null,dir:1};
+  applyFilter();
+}
+function populateFilterOptions() {
+  const sups = [...new Set(coupons.map(c=>c.supplier))].sort();
+  const years = [...new Set(coupons.map(c=>new Date(c.expiry).getFullYear()).filter(y=>!isNaN(y)))].sort();
+  const supSel = document.getElementById('filterSupplier');
+  const yearSel = document.getElementById('filterYear');
+  const curSup = supSel.value, curYear = yearSel.value;
+  supSel.innerHTML = '<option value="">כל הספקים</option>' + sups.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  yearSel.innerHTML = '<option value="">כל השנים</option>' + years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  supSel.value = curSup; yearSel.value = curYear;
+}
 
 function statusBadge(c) {
   const d = new Date(c.expiry);
@@ -315,6 +385,15 @@ async function deleteCoupon(id) {
 
 document.addEventListener('keydown', e => { if (e.key==='Escape') { closeDetail(); closeForm(); }});
 document.getElementById('search').addEventListener('input', applyFilter);
+['filterSupplier','filterStatus','filterYear'].forEach(id => document.getElementById(id).addEventListener('change', applyFilter));
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.sort;
+    if (sortState.key === k) sortState.dir = -sortState.dir;
+    else { sortState.key = k; sortState.dir = 1; }
+    applyFilter();
+  });
+});
 
 function renderCharts() {
   Object.values(charts).forEach(ch => ch && ch.destroy());
