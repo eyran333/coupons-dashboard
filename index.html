@@ -243,6 +243,7 @@ async function loadData() {
     status('טוען…');
     const res = await fetch(WEB_APP_URL + '?idToken=' + encodeURIComponent(idToken||''));
     const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'שגיאה לא ידועה');
     coupons = (data.coupons || []).map(c => ({
       ...c,
       value:Number(c.value)||0, remaining:Number(c.remaining)||0, spent:Number(c.spent)||0, id:Number(c.id),
