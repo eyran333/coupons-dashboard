@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>דאשבורד השוברים שלנו</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   body { font-family: "Segoe UI", Arial, sans-serif; background:#f4f6fa; margin:0; padding:24px; color:#222;}
   h1 { text-align:center; margin:0 0 8px; color:#2c3e50;}
@@ -68,9 +69,30 @@
   #status.err { background:#c0392b;}
   .setup-banner { background:#fff3cd; border:1px solid #ffe08a; padding:16px; border-radius:8px; margin-bottom:24px; color:#8a6d3b;}
   .setup-banner code { background:#fff; padding:2px 6px; border-radius:4px; font-family:monospace;}
+  #loginGate { position:fixed; inset:0; background:#f4f6fa; z-index:300; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;}
+  #loginGate h2 { color:#2c3e50; margin:0;}
+  #loginGate p { color:#7f8c8d; max-width:420px; text-align:center;}
+  #loginErr { color:#c0392b; font-weight:600;}
+  #userBar { position:fixed; top:16px; right:16px; background:#fff; padding:8px 14px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:none; align-items:center; gap:10px; font-size:13px; z-index:150;}
+  #userBar.on { display:flex;}
+  #userBar img { width:28px; height:28px; border-radius:50%;}
+  #userBar button { background:#e74c3c; color:#fff; border:none; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:12px;}
 </style>
 </head>
 <body>
+
+<div id="loginGate">
+  <h2>🔒 כניסה לדאשבורד השוברים</h2>
+  <p>יש להיכנס עם חשבון Gmail מורשה כדי לצפות ולערוך את השוברים.</p>
+  <div id="googleBtn"></div>
+  <div id="loginErr"></div>
+</div>
+
+<div id="userBar">
+  <img id="userAvatar" src="" alt="">
+  <span id="userEmail"></span>
+  <button onclick="signOut()">התנתק</button>
+</div>
 
 <div id="status"></div>
 
@@ -174,10 +196,18 @@
 
 <script>
 // ============================================================
-// PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BELOW
-// It looks like: https://script.google.com/macros/s/AKfycb.../exec
+// 1. WEB_APP_URL — your Apps Script web app /exec URL
+// 2. GOOGLE_CLIENT_ID — OAuth Client ID from Google Cloud Console (Credentials → Web application)
+// 3. ALLOWED_EMAILS — Gmail addresses allowed to open the dashboard (lowercase)
 // ============================================================
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx-uV3n1pXrypN82bGUFpQGzi2pTzw0us0xZ-8UkDLF5yQu1b3v7mH8zgJwDzzCLKXi/exec';
+const GOOGLE_CLIENT_ID = '404089340105-qcg1d6ha4dedppamov3hrqlm7on36lv2.apps.googleusercontent.com';
+const ALLOWED_EMAILS = [
+  'eyran333@gmail.com', 'linoy_isr@yahoo.com', 'linoybarnea@gmail.com' 
+];
+
+let idToken = null;
+let currentUser = null;
 
 const PALETTE = ['#3498db','#e74c3c','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#16a085','#d35400','#c0392b','#8e44ad'];
 const today = new Date();
@@ -197,11 +227,10 @@ function status(msg, isError) {
 
 async function api(action, payload) {
   if (!WEB_APP_URL) { document.getElementById('setupBanner').style.display='block'; throw new Error('WEB_APP_URL not configured'); }
-  // Use text/plain to avoid CORS preflight on Apps Script
   const res = await fetch(WEB_APP_URL, {
     method: 'POST',
     headers: {'Content-Type': 'text/plain;charset=utf-8'},
-    body: JSON.stringify({action, ...payload}),
+    body: JSON.stringify({action, idToken, ...payload}),
   });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || 'unknown error');
@@ -212,7 +241,7 @@ async function loadData() {
   if (!WEB_APP_URL) { document.getElementById('setupBanner').style.display='block'; return; }
   try {
     status('טוען…');
-    const res = await fetch(WEB_APP_URL);
+    const res = await fetch(WEB_APP_URL + '?idToken=' + encodeURIComponent(idToken||''));
     const data = await res.json();
     coupons = (data.coupons || []).map(c => ({
       ...c,
@@ -427,7 +456,64 @@ function renderCharts() {
   });
 }
 
-loadData();
+// ---- Google Sign-In ----
+function handleCredentialResponse(response) {
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  const email = (payload.email || '').toLowerCase();
+  if (!ALLOWED_EMAILS.map(e=>e.toLowerCase()).includes(email)) {
+    document.getElementById('loginErr').textContent = `הכניסה אסורה עבור ${email}. יש ליצור קשר לקבלת הרשאה.`;
+    return;
+  }
+  idToken = response.credential;
+  currentUser = {email, name: payload.name, picture: payload.picture};
+  sessionStorage.setItem('coupons_token', idToken);
+  sessionStorage.setItem('coupons_user', JSON.stringify(currentUser));
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('loginGate').style.display = 'none';
+  const bar = document.getElementById('userBar');
+  bar.classList.add('on');
+  document.getElementById('userEmail').textContent = currentUser.email;
+  document.getElementById('userAvatar').src = currentUser.picture || '';
+  loadData();
+}
+
+function signOut() {
+  sessionStorage.removeItem('coupons_token');
+  sessionStorage.removeItem('coupons_user');
+  idToken = null; currentUser = null;
+  location.reload();
+}
+
+function initAuth() {
+  if (!GOOGLE_CLIENT_ID) {
+    document.getElementById('loginErr').textContent = 'שגיאת הגדרה: חסר GOOGLE_CLIENT_ID בקוד.';
+    return;
+  }
+  const cachedToken = sessionStorage.getItem('coupons_token');
+  const cachedUser = sessionStorage.getItem('coupons_user');
+  if (cachedToken && cachedUser) {
+    try {
+      const payload = JSON.parse(atob(cachedToken.split('.')[1]));
+      if (payload.exp * 1000 > Date.now()) {
+        idToken = cachedToken;
+        currentUser = JSON.parse(cachedUser);
+        showApp();
+        return;
+      }
+    } catch(e){}
+  }
+  const tryInit = () => {
+    if (!window.google || !google.accounts || !google.accounts.id) { setTimeout(tryInit, 100); return; }
+    google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleCredentialResponse});
+    google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_blue', size:'large', text:'signin_with'});
+  };
+  tryInit();
+}
+
+initAuth();
 </script>
 </body>
 </html>
