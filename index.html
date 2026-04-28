@@ -203,7 +203,7 @@
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx-uV3n1pXrypN82bGUFpQGzi2pTzw0us0xZ-8UkDLF5yQu1b3v7mH8zgJwDzzCLKXi/exec';
 const GOOGLE_CLIENT_ID = '404089340105-qcg1d6ha4dedppamov3hrqlm7on36lv2.apps.googleusercontent.com';
 const ALLOWED_EMAILS = [
-  'eyran333@gmail.com', 'linoy_isr@yahoo.com', 'linoybarnea@gmail.com' 
+  'eyran333@gmail.com', 'linoy_isr@yahoo.com', 'linoybarnea@gmail.com'
 ];
 
 let idToken = null;
@@ -325,12 +325,9 @@ function populateFilterOptions() {
 }
 
 function statusBadge(c) {
-  const d = new Date(c.expiry);
-  const days = (d - today)/(1000*60*60*24);
-  if (c.remaining === 0) return '<span class="badge used">נוצל</span>';
-  if (days < 0) return '<span class="badge expired">פג תוקף</span>';
-  if (days < 90) return '<span class="badge soon">פג בקרוב</span>';
-  return '<span class="badge ok">פעיל</span>';
+  const k = statusKey(c);
+  return {used:'<span class="badge used">נוצל</span>', expired:'<span class="badge expired">פג תוקף</span>',
+    soon:'<span class="badge soon">פג בקרוב</span>', ok:'<span class="badge ok">פעיל</span>'}[k];
 }
 
 function escapeHtml(s) {
@@ -348,6 +345,7 @@ function renderTable(rows) {
       <td onclick="event.stopPropagation()">
         <div class="row-actions">
           <button class="btn btn-edit btn-sm" onclick="openForm(${c.id})">ערוך</button>
+          <button class="btn btn-primary btn-sm" onclick="duplicateCoupon(${c.id})">שכפל</button>
           <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id})">מחק</button>
         </div>
       </td>
@@ -411,6 +409,15 @@ async function deleteCoupon(id) {
   if (!confirm(`למחוק "${c.desc}"?`)) return;
   try { await api('delete', {id}); status('נמחק ✓'); await loadData(); }
   catch(err) { status('מחיקה נכשלה: '+err.message, true); }
+}
+
+async function duplicateCoupon(id) {
+  const c = coupons.find(x=>x.id===id); if (!c) return;
+  // Build a new coupon by copying all fields except id (the backend will assign a new one).
+  const {id:_, ...copy} = c;
+  copy.desc = c.desc + ' (עותק)';
+  try { await api('add', {coupon: copy}); status('שובר שוכפל ✓'); await loadData(); }
+  catch(err) { status('שכפול נכשל: '+err.message, true); }
 }
 
 document.addEventListener('keydown', e => { if (e.key==='Escape') { closeDetail(); closeForm(); }});
