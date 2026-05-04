@@ -200,11 +200,9 @@
 // 2. GOOGLE_CLIENT_ID — OAuth Client ID from Google Cloud Console (Credentials → Web application)
 // 3. ALLOWED_EMAILS — Gmail addresses allowed to open the dashboard (lowercase)
 // ============================================================
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx-uV3n1pXrypN82bGUFpQGzi2pTzw0us0xZ-8UkDLF5yQu1b3v7mH8zgJwDzzCLKXi/exec';
-const GOOGLE_CLIENT_ID = '404089340105-qcg1d6ha4dedppamov3hrqlm7on36lv2.apps.googleusercontent.com';
-const ALLOWED_EMAILS = [
-  'eyran333@gmail.com', 'linoy_isr@yahoo.com', 'linoybarnea@gmail.com'
-];
+const WEB_APP_URL = '__WEB_APP_URL__';
+const GOOGLE_CLIENT_ID = '__GOOGLE_CLIENT_ID__';
+const ALLOWED_EMAILS = '__ALLOWED_EMAILS__'.split(',').map(e => e.trim());
 
 let idToken = null;
 let currentUser = null;
