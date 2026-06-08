@@ -311,7 +311,8 @@ function renderKpis() {
 function statusKey(c) {
   const d = new Date(c.expiry);
   const days = (d - today)/(1000*60*60*24);
-  if (c.remaining === 0) return 'used';
+  // "Used" = had value, all spent. Avoids false positives for coupons where value/spent are both 0.
+  if ((Number(c.value)||0) > 0 && (Number(c.remaining)||0) <= 0) return 'used';
   if (days < 0) return 'expired';
   if (days < 90) return 'soon';
   return 'ok';
@@ -474,15 +475,18 @@ function closeForm() { document.getElementById('formBg').classList.remove('open'
 async function saveCoupon(e) {
   e.preventDefault();
   const idVal = document.getElementById('f_id').value;
+  const value = parseFloat(document.getElementById('f_value').value) || 0;
+  const spent = parseFloat(document.getElementById('f_spent').value) || 0;
+  const remaining = Math.max(0, Math.round((value - spent) * 100) / 100);  // always derived from value − spent
   const data = {
     desc: document.getElementById('f_desc').value.trim(),
     supplier: document.getElementById('f_supplier').value.trim(),
     type: document.getElementById('f_type').value.trim(),
     purchased: document.getElementById('f_purchased').value.trim(),
     expiry: document.getElementById('f_expiry').value,
-    value: parseFloat(document.getElementById('f_value').value) || 0,
-    remaining: parseFloat(document.getElementById('f_remaining').value) || 0,
-    spent: parseFloat(document.getElementById('f_spent').value) || 0,
+    value,
+    spent,
+    remaining,
     number: document.getElementById('f_number').value.trim(),
     note: document.getElementById('f_note').value.trim(),
     extra: document.getElementById('f_extra').value.trim(),
