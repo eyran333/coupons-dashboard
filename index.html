@@ -77,6 +77,32 @@
   #userBar.on { display:flex;}
   #userBar img { width:28px; height:28px; border-radius:50%;}
   #userBar button { background:#e74c3c; color:#fff; border:none; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:12px;}
+
+  /* Row highlight for coupons expiring within 6 months — softer tint */
+  tbody tr.expiring-soon td { background:#fff3cd !important; border-right:3px solid #f39c12; }
+  tbody tr.expiring-soon:hover td { background:#ffe69c !important; }
+  tbody tr.expired-row td { background:#fadbd8 !important; border-right:3px solid #c0392b; color:#6e2a25; }
+  tbody tr.expired-row:hover td { background:#f5b7b1 !important; }
+  /* Totals row in table footer */
+  tfoot tr td { background:#f1f4f8; font-weight:700; color:#2c3e50; border-top:2px solid #cdd5dd; }
+
+  /* Right-side view-switcher sidebar */
+  body { padding-right:96px; }  /* leave space for the sidebar */
+  .sidebar { position:fixed; top:120px; right:16px; display:flex; flex-direction:column; gap:10px; z-index:60; }
+  .sidebar button {
+    background:#fff; color:#34495e; border:1px solid #d0d6dd; border-radius:12px;
+    padding:14px 10px; cursor:pointer; font-size:13px; font-weight:600;
+    width:72px; display:flex; flex-direction:column; align-items:center; gap:4px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.06); transition:all 0.15s;
+  }
+  .sidebar button:hover { border-color:#3498db; color:#3498db; }
+  .sidebar button.active { background:#3498db; color:#fff; border-color:#3498db; box-shadow:0 4px 12px rgba(52,152,219,0.4); }
+  .sidebar button .ico { font-size:22px; line-height:1; }
+
+  /* View visibility — toggled via body class */
+  body.view-table .chart-card { display:none; }
+  body.view-charts .coupons-card { display:none; }
+  /* default (no body class) shows everything, but we set view-charts in JS on load */
 </style>
 </head>
 <body>
@@ -110,12 +136,21 @@
   <div class="kpi"><div class="value" id="kpiExpired">0</div><div class="label">שוברים שפגו</div></div>
 </div>
 
-<div class="grid">
-  <div class="card"><h2>סך שימוש בשוברים לפי ספק (₪)<span class="hint">לחץ על עמודה לסינון</span></h2><canvas id="usedChart"></canvas></div>
-  <div class="card"><h2>התפלגות הוצאות לפי קטגוריה<span class="hint">לחץ על פלח לסינון</span></h2><canvas id="spendChart"></canvas></div>
-  <div class="card full"><h2>תפוגות לפי שנה<span class="hint">לחץ על עמודה לסינון</span></h2><canvas id="expiryChart"></canvas></div>
+<div class="sidebar">
+  <button id="navTable" class="active" onclick="switchView('table')">
+    <span class="ico">📋</span><span>שוברים</span>
+  </button>
+  <button id="navCharts" onclick="switchView('charts')">
+    <span class="ico">📊</span><span>גרפים</span>
+  </button>
+</div>
 
-  <div class="card full">
+<div class="grid">
+  <div class="card chart-card"><h2>סך שימוש בשוברים לפי ספק (₪)<span class="hint">לחץ על עמודה לסינון</span></h2><canvas id="usedChart"></canvas></div>
+  <div class="card chart-card"><h2>התפלגות הוצאות לפי קטגוריה<span class="hint">לחץ על פלח לסינון</span></h2><canvas id="spendChart"></canvas></div>
+  <div class="card full chart-card"><h2>תפוגות לפי שנה<span class="hint">לחץ על עמודה לסינון</span></h2><canvas id="expiryChart"></canvas></div>
+
+  <div class="card full coupons-card">
     <h2>רשימת שוברים
       <span class="toolbar">
         <button class="btn btn-primary" onclick="openForm()">+ הוסף שובר</button>
@@ -142,13 +177,14 @@
           <th class="sortable" data-sort="desc">תיאור <span class="arrow"></span></th>
           <th class="sortable" data-sort="supplier">ספק <span class="arrow"></span></th>
           <th class="sortable" data-sort="value">שווי <span class="arrow"></span></th>
-          <th class="sortable" data-sort="remaining">נשאר <span class="arrow"></span></th>
           <th class="sortable" data-sort="spent">שולם <span class="arrow"></span></th>
+          <th class="sortable" data-sort="remaining">נשאר <span class="arrow"></span></th>
           <th class="sortable" data-sort="expiry">תוקף <span class="arrow"></span></th>
           <th class="sortable" data-sort="status">סטטוס <span class="arrow"></span></th>
           <th>פעולות</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
       </table>
     </div>
   </div>
@@ -179,9 +215,9 @@
         <div class="field"><label>סוג שובר</label><input id="f_type"></div>
         <div class="field"><label>תאריך רכישה</label><input id="f_purchased" placeholder="למשל 15.3.2026"></div>
         <div class="field"><label>תוקף *</label><input id="f_expiry" type="date" required></div>
-        <div class="field"><label>שווי מקורי (₪) *</label><input id="f_value" type="number" step="0.01" min="0" required></div>
-        <div class="field"><label>יתרה (₪) *</label><input id="f_remaining" type="number" step="0.01" min="0" required></div>
-        <div class="field"><label>שולם בפועל (₪)</label><input id="f_spent" type="number" step="0.01" min="0" value="0"></div>
+        <div class="field"><label>שווי (₪) *</label><input id="f_value" type="number" step="0.01" min="0" required></div>
+        <div class="field"><label>שולם (₪)</label><input id="f_spent" type="number" step="0.01" min="0" value="0"></div>
+        <div class="field"><label>נשאר (₪)</label><input id="f_remaining" type="number" step="0.01" min="0" readonly style="background:#f4f6fa;color:#7f8c8d;"></div>
         <div class="field full"><label>מספר שובר</label><input id="f_number"></div>
         <div class="field full"><label>הערות</label><textarea id="f_note"></textarea></div>
         <div class="field full"><label>מידע נוסף</label><textarea id="f_extra"></textarea></div>
@@ -237,6 +273,20 @@ async function api(action, payload) {
   return data;
 }
 
+// Normalize a coupon — guarantees remaining = value − spent, regardless of source.
+function normalizeCoupon(c) {
+  const value = Number(c.value)||0;
+  const spent = Number(c.spent)||0;
+  return {
+    ...c,
+    id: Number(c.id),
+    value, spent,
+    remaining: Math.max(0, Math.round((value - spent) * 100) / 100),
+    expiry: c.expiry ? String(c.expiry).slice(0,10) : '',
+    purchased: c.purchased ? String(c.purchased).slice(0,10) : '',
+  };
+}
+
 async function loadData() {
   if (!WEB_APP_URL) { document.getElementById('setupBanner').style.display='block'; return; }
   try {
@@ -244,12 +294,7 @@ async function loadData() {
     const res = await fetch(WEB_APP_URL + '?idToken=' + encodeURIComponent(idToken||''));
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'שגיאה לא ידועה');
-    coupons = (data.coupons || []).map(c => ({
-      ...c,
-      value:Number(c.value)||0, remaining:Number(c.remaining)||0, spent:Number(c.spent)||0, id:Number(c.id),
-      expiry: c.expiry ? String(c.expiry).slice(0,10) : '',
-      purchased: c.purchased ? String(c.purchased).slice(0,10) : '',
-    }));
+    coupons = (data.coupons || []).map(normalizeCoupon);
     populateFilterOptions();
     renderKpis(); renderCharts(); applyFilter();
     status('נטען ✓');
@@ -334,13 +379,28 @@ function escapeHtml(s) {
   return String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+function rowHighlightClass(c) {
+  // Highlight rows expiring within 6 months (180 days). Already-expired rows get a stronger red.
+  if (!c.expiry) return '';
+  const days = (new Date(c.expiry) - today) / (1000 * 60 * 60 * 24);
+  if (isNaN(days)) return '';
+  if (days < 0) return 'expired-row';
+  if (days < 180) return 'expiring-soon';
+  return '';
+}
+
 function renderTable(rows) {
   const tb = document.getElementById('tbody');
-  if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#95a5a6;padding:20px;">אין שוברים</td></tr>'; return; }
+  const tf = document.getElementById('tfoot');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#95a5a6;padding:20px;">אין שוברים</td></tr>';
+    if (tf) tf.innerHTML = '';
+    return;
+  }
   tb.innerHTML = rows.map(c => `
-    <tr onclick="showDetail(${c.id})">
+    <tr class="${rowHighlightClass(c)}" onclick="showDetail(${c.id})">
       <td>${escapeHtml(c.desc)}</td><td>${escapeHtml(c.supplier)}</td>
-      <td>${c.value} ₪</td><td>${c.remaining} ₪</td><td>${c.spent} ₪</td>
+      <td>${c.value} ₪</td><td>${c.spent} ₪</td><td>${c.remaining} ₪</td>
       <td>${escapeHtml(c.expiry)}</td><td>${statusBadge(c)}</td>
       <td onclick="event.stopPropagation()">
         <div class="row-actions">
@@ -350,14 +410,33 @@ function renderTable(rows) {
         </div>
       </td>
     </tr>`).join('');
+
+  // Totals row (only the visible/filtered rows are summed)
+  const sum = k => rows.reduce((a,c)=>a + (Number(c[k])||0), 0);
+  const total = (n) => Math.round(n*100)/100;
+  if (tf) tf.innerHTML = `
+    <tr>
+      <td colspan="2">סה"כ (${rows.length} שוברים)</td>
+      <td>${total(sum('value')).toLocaleString()} ₪</td>
+      <td>${total(sum('spent')).toLocaleString()} ₪</td>
+      <td>${total(sum('remaining')).toLocaleString()} ₪</td>
+      <td colspan="3"></td>
+    </tr>`;
+}
+
+function switchView(view) {
+  document.body.classList.remove('view-charts','view-table');
+  document.body.classList.add('view-' + view);
+  document.getElementById('navCharts').classList.toggle('active', view === 'charts');
+  document.getElementById('navTable').classList.toggle('active', view === 'table');
 }
 
 function showDetail(id) {
   const c = coupons.find(x => x.id===id); if (!c) return;
   document.getElementById('detailTitle').textContent = c.desc;
   const fields = [['ספק',c.supplier],['סוג שובר',c.type],['תאריך רכישה',c.purchased||'—'],
-    ['שווי מקורי',c.value+' ₪'],['יתרה',c.remaining+' ₪'],['שימוש',(c.value-c.remaining).toFixed(2)+' ₪'],
-    ['שולם',c.spent+' ₪'],['תוקף',c.expiry],
+    ['שווי',c.value+' ₪'],['שולם',c.spent+' ₪'],['נשאר',c.remaining+' ₪'],
+    ['תוקף',c.expiry],
     ['מספר שובר',`<span class="voucher-num">${escapeHtml(c.number)}</span>`],
     ['הערות',escapeHtml(c.note)],['מידע נוסף',escapeHtml(c.extra)||'—']];
   document.getElementById('detailBody').innerHTML = fields.map(([l,v])=>`<div class="row"><div class="label">${l}</div><div class="val">${v}</div></div>`).join('');
@@ -367,6 +446,12 @@ function showDetail(id) {
 }
 function closeDetail() { document.getElementById('detailBg').classList.remove('open'); }
 
+function recomputeRemaining() {
+  const v = parseFloat(document.getElementById('f_value').value) || 0;
+  const s = parseFloat(document.getElementById('f_spent').value) || 0;
+  document.getElementById('f_remaining').value = Math.max(0, Math.round((v - s) * 100) / 100);
+}
+
 function openForm(id) {
   const isEdit = id !== undefined;
   const c = isEdit ? coupons.find(x=>x.id===id) : null;
@@ -375,9 +460,16 @@ function openForm(id) {
   ['desc','supplier','type','purchased','expiry','value','remaining','spent','number','note','extra'].forEach(k=>{
     document.getElementById('f_'+k).value = c ? (c[k] ?? (k==='spent'?0:'')) : (k==='spent'?0:'');
   });
+  recomputeRemaining();  // make sure יתרה shows value − spent on open
   document.getElementById('formBg').classList.add('open');
 }
 function closeForm() { document.getElementById('formBg').classList.remove('open'); }
+
+// Live-update יתרה whenever שווי or שולם change
+['f_value','f_spent'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', recomputeRemaining);
+});
 
 async function saveCoupon(e) {
   e.preventDefault();
@@ -485,6 +577,7 @@ function showApp() {
   bar.classList.add('on');
   document.getElementById('userEmail').textContent = currentUser.email;
   document.getElementById('userAvatar').src = currentUser.picture || '';
+  switchView('table');
   loadData();
 }
 
