@@ -100,13 +100,239 @@
   .sidebar button .ico { font-size:22px; line-height:1; }
 
   /* View visibility — toggled via body class */
-  body.view-table .chart-card { display:none; }
-  body.view-charts .coupons-card { display:none; }
-  /* default (no body class) shows everything, but we set view-charts in JS on load */
+  body.view-table .chart-card, body.view-table .cards-card { display:none; }
+  body.view-charts .coupons-card, body.view-charts .cards-card { display:none; }
+  body.view-cards .chart-card, body.view-cards .coupons-card { display:none; }
+
+  /* === DARK MODE === */
+  body.dark { background:#0f1419; color:#e4e6eb; }
+  body.dark .card { background:#1c2128; box-shadow:0 2px 12px rgba(0,0,0,0.5); }
+  body.dark .card h2, body.dark h1, body.dark .modal h3 { color:#e4e6eb; }
+  body.dark .subtitle { color:#8b95a3; }
+  body.dark .kpi { background:#1c2128; box-shadow:0 2px 12px rgba(0,0,0,0.5); }
+  body.dark .kpi .value { color:#5fa9f7; }
+  body.dark .kpi .label { color:#8b95a3; }
+  body.dark th { background:#262d36; color:#c9ccd1; border-bottom-color:#2d3540; }
+  body.dark td { border-bottom-color:#2d3540; color:#d4d6dc; }
+  body.dark tbody tr:hover { background:#262d36; }
+  body.dark th.sortable:hover { background:#303a47; }
+  body.dark tfoot tr td { background:#262d36; color:#e4e6eb; border-top-color:#3a4452; }
+  body.dark .sidebar button { background:#1c2128; color:#c9ccd1; border-color:#2d3540; }
+  body.dark .sidebar button:hover { border-color:#5fa9f7; color:#5fa9f7; }
+  body.dark .sidebar button.active { background:#5fa9f7; color:#0f1419; border-color:#5fa9f7; }
+  body.dark .modal { background:#1c2128; }
+  body.dark .modal .row { border-bottom-color:#2d3540; }
+  body.dark .modal .row .label { color:#8b95a3; }
+  body.dark .modal .row .val { color:#e4e6eb; }
+  body.dark .filter-bar input, body.dark .filter-bar select,
+  body.dark .field input, body.dark .field textarea {
+    background:#262d36; color:#e4e6eb; border-color:#2d3540;
+  }
+  body.dark .field input[readonly] { background:#1a1f25 !important; color:#8b95a3 !important; }
+  body.dark .voucher-num { background:#262d36; color:#e4e6eb; }
+  body.dark tbody tr.expiring-soon td { background:#3d3520 !important; color:#fde8a6; border-right-color:#f39c12; }
+  body.dark tbody tr.expiring-soon:hover td { background:#4a4226 !important; }
+  body.dark tbody tr.expired-row td { background:#3d2424 !important; color:#f8b6b6; border-right-color:#c0392b; }
+  body.dark tbody tr.expired-row:hover td { background:#4a2a2a !important; }
+  body.dark .badge.ok { background:#1f3d2a; color:#5dd394; }
+  body.dark .badge.soon { background:#3d3520; color:#f7c873; }
+  body.dark .badge.expired { background:#3d2424; color:#ff8a80; }
+  body.dark .badge.used { background:#1a2a3d; color:#7ab8e8; }
+
+  /* Theme toggle button (top-left) */
+  #themeToggle {
+    position:fixed; top:16px; left:16px; z-index:200;
+    background:#fff; border:1px solid #d0d6dd; border-radius:50%;
+    width:44px; height:44px; cursor:pointer; font-size:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:transform 0.2s;
+  }
+  #themeToggle:hover { transform:scale(1.1); }
+  body.dark #themeToggle { background:#1c2128; border-color:#2d3540; }
+
+  /* === EXPIRING-SOON HERO STRIP === */
+  .exp-strip {
+    display:flex; gap:12px; overflow-x:auto; padding:12px 4px;
+    margin:0 auto 20px; max-width:1400px; scrollbar-width:thin;
+  }
+  .exp-strip:empty { display:none; }
+  .exp-strip::-webkit-scrollbar { height:6px; }
+  .exp-strip::-webkit-scrollbar-thumb { background:#cbd1d8; border-radius:3px; }
+  body.dark .exp-strip::-webkit-scrollbar-thumb { background:#3d4452; }
+  .exp-mini {
+    min-width:220px; max-width:260px; padding:12px 14px;
+    background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06);
+    cursor:pointer; border-right:4px solid #f39c12;
+    transition:transform 0.15s, box-shadow 0.15s; flex-shrink:0;
+  }
+  .exp-mini:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+  body.dark .exp-mini { background:#1c2128; box-shadow:0 2px 8px rgba(0,0,0,0.4); color:#e4e6eb; }
+  .exp-mini.urgent { border-right-color:#e74c3c; animation:pulse 1.6s infinite ease-in-out; }
+  @keyframes pulse {
+    0%,100% { transform:translateY(0); box-shadow:0 2px 8px rgba(231,76,60,0.3); }
+    50%     { transform:translateY(-2px); box-shadow:0 6px 20px rgba(231,76,60,0.6); }
+  }
+  .exp-mini .exp-name { font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  body.dark .exp-mini .exp-name { color:#e4e6eb; }
+  .exp-mini .exp-when { font-size:12px; color:#e67e22; font-weight:600; }
+  .exp-mini.urgent .exp-when { color:#e74c3c; }
+  .exp-mini .exp-meta { font-size:11px; color:#95a5a6; margin-top:4px; }
+  .exp-strip-title { font-size:13px; color:#7f8c8d; padding:4px 12px; display:flex; align-items:center; gap:8px; }
+  body.dark .exp-strip-title { color:#8b95a3; }
+
+  /* === CARD GRID VIEW === */
+  .card-grid {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:16px; padding:8px;
+  }
+  .coupon-card {
+    perspective:1200px; height:200px; cursor:pointer;
+  }
+  .coupon-card-inner {
+    position:relative; width:100%; height:100%;
+    transition:transform 0.6s; transform-style:preserve-3d;
+  }
+  .coupon-card.flipped .coupon-card-inner { transform:rotateY(180deg); }
+  .coupon-card-front, .coupon-card-back {
+    position:absolute; inset:0; backface-visibility:hidden;
+    border-radius:14px; padding:16px;
+    background:#fff; box-shadow:0 4px 14px rgba(0,0,0,0.08);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  body.dark .coupon-card-front, body.dark .coupon-card-back {
+    background:#1c2128; box-shadow:0 4px 14px rgba(0,0,0,0.5);
+  }
+  .coupon-card-back { transform:rotateY(180deg); font-size:12px; }
+  .coupon-card-front .initial {
+    width:48px; height:48px; border-radius:50%;
+    background:linear-gradient(135deg, #3498db, #9b59b6); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:20px; margin-bottom:10px;
+  }
+  .coupon-card-front .cc-desc {
+    font-size:14px; font-weight:700; color:#2c3e50;
+    overflow:hidden; text-overflow:ellipsis; display:-webkit-box;
+    -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.3;
+    margin-bottom:8px;
+  }
+  body.dark .coupon-card-front .cc-desc { color:#e4e6eb; }
+  .coupon-card-front .cc-supplier { font-size:12px; color:#7f8c8d; margin-bottom:auto; }
+  body.dark .coupon-card-front .cc-supplier { color:#8b95a3; }
+  .coupon-card-front .cc-amount {
+    font-size:20px; font-weight:700; color:#27ae60; margin-top:8px;
+  }
+  body.dark .coupon-card-front .cc-amount { color:#5dd394; }
+  .coupon-card-front .cc-amount.zero { color:#95a5a6; }
+  .coupon-card-front .cc-expiry { font-size:11px; color:#95a5a6; margin-top:2px; }
+  .coupon-card-back div { padding:2px 0; }
+  .coupon-card-back .label { color:#95a5a6; display:inline-block; min-width:60px; }
+  .coupon-card.urgent::after {
+    content:""; position:absolute; top:8px; left:8px;
+    width:8px; height:8px; border-radius:50%; background:#e74c3c;
+    box-shadow:0 0 0 0 rgba(231,76,60,0.7); animation:dot 1.5s infinite;
+  }
+  @keyframes dot {
+    0%,100% { box-shadow:0 0 0 0 rgba(231,76,60,0.7); }
+    50% { box-shadow:0 0 0 8px rgba(231,76,60,0); }
+  }
+
+  /* === GLASSMORPHISM === */
+  /* Soft gradient mesh background */
+  body {
+    background:
+      radial-gradient(at 20% 10%, rgba(52,152,219,0.20), transparent 50%),
+      radial-gradient(at 80% 20%, rgba(155,89,182,0.18), transparent 50%),
+      radial-gradient(at 60% 90%, rgba(46,204,113,0.15), transparent 50%),
+      radial-gradient(at 10% 80%, rgba(243,156,18,0.15), transparent 50%),
+      #eef2f7;
+    background-attachment: fixed;
+  }
+  body.dark {
+    background:
+      radial-gradient(at 20% 10%, rgba(52,152,219,0.20), transparent 50%),
+      radial-gradient(at 80% 20%, rgba(155,89,182,0.20), transparent 50%),
+      radial-gradient(at 60% 90%, rgba(46,204,113,0.10), transparent 50%),
+      radial-gradient(at 10% 80%, rgba(243,156,18,0.10), transparent 50%),
+      #0f1419;
+    background-attachment: fixed;
+  }
+  /* Frosted-glass cards & modals */
+  .card, .kpi {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  body.dark .card, body.dark .kpi {
+    background: rgba(28,33,40,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .modal {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  body.dark .modal {
+    background: rgba(28,33,40,0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar button {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+  body.dark .sidebar button { background: rgba(28,33,40,0.7); }
+  #themeToggle {
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  body.dark #themeToggle { background: rgba(28,33,40,0.8); }
+  .exp-mini, .coupon-card-front, .coupon-card-back {
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  body.dark .exp-mini, body.dark .coupon-card-front, body.dark .coupon-card-back {
+    background: rgba(28,33,40,0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* === SEARCH HIGHLIGHT === */
+  mark.search-hit {
+    background: #fff176;
+    color: inherit;
+    padding: 1px 2px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  body.dark mark.search-hit {
+    background: #b8860b;
+    color: #fff;
+  }
+
+  /* === SUPPLIER BADGE (color circle + initial) === */
+  .supplier-cell { display:inline-flex; align-items:center; gap:8px; }
+  .supplier-badge {
+    width:26px; height:26px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:12px; flex-shrink:0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
 </style>
 </head>
 <body>
 
+
+
+<button id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+
+<div id="expiringStripWrap" style="display:none;">
+  <div class="exp-strip-title">⏰ <span>שוברים שפגים ב-90 הימים הקרובים</span></div>
+  <div id="expiringStrip" class="exp-strip"></div>
+</div>
 <div id="loginGate">
   <h2>🔒 כניסה לדאשבורד השוברים</h2>
   <p>יש להיכנס עם חשבון Gmail מורשה כדי לצפות ולערוך את השוברים.</p>
@@ -140,6 +366,9 @@
   <button id="navTable" class="active" onclick="switchView('table')">
     <span class="ico">📋</span><span>שוברים</span>
   </button>
+  <button id="navCards" onclick="switchView('cards')">
+    <span class="ico">🎴</span><span>כרטיסיות</span>
+  </button>
   <button id="navCharts" onclick="switchView('charts')">
     <span class="ico">📊</span><span>גרפים</span>
   </button>
@@ -149,6 +378,11 @@
   <div class="card chart-card"><h2>סך שימוש בשוברים לפי ספק (₪)<span class="hint">לחץ על עמודה לסינון</span></h2><canvas id="usedChart"></canvas></div>
   <div class="card chart-card"><h2>התפלגות הוצאות לפי קטגוריה<span class="hint">לחץ על פלח לסינון</span></h2><canvas id="spendChart"></canvas></div>
   <div class="card full chart-card"><h2>תפוגות לפי שנה<span class="hint">לחץ על עמודה לסינון</span></h2><canvas id="expiryChart"></canvas></div>
+
+  <div class="card full cards-card">
+    <h2>תצוגת כרטיסיות<span class="hint">לחץ על כרטיסיה כדי להפוך אותה</span></h2>
+    <div id="cardGrid" class="card-grid"></div>
+  </div>
 
   <div class="card full coupons-card">
     <h2>רשימת שוברים
@@ -301,12 +535,137 @@ async function loadData() {
   } catch(e) { status('טעינה נכשלה: '+e.message, true); }
 }
 
-function renderKpis() {
-  document.getElementById('kpiTotal').textContent = coupons.length;
-  document.getElementById('kpiUsed').textContent = Math.round(coupons.reduce((s,c)=>s+(c.value-c.remaining),0)).toLocaleString()+' ₪';
-  document.getElementById('kpiSpent').textContent = Math.round(coupons.reduce((s,c)=>s+c.spent,0)).toLocaleString()+' ₪';
-  document.getElementById('kpiExpired').textContent = coupons.filter(c=>new Date(c.expiry)<today).length;
+// Animate a number from current value to target over duration ms.
+function animateNumber(elId, target, suffix='', duration=800) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const start = performance.now();
+  // Parse current displayed value to start animation from
+  const cur = parseInt(String(el.textContent).replace(/[^\d-]/g,'')) || 0;
+  function step(t) {
+    const p = Math.min(1, (t - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);  // ease-out cubic
+    const v = Math.round(cur + (target - cur) * eased);
+    el.textContent = v.toLocaleString() + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
+
+function renderKpis() {
+  const used = Math.round(coupons.reduce((s,c)=>s+(c.value-c.remaining),0));
+  const spent = Math.round(coupons.reduce((s,c)=>s+c.spent,0));
+  const expired = coupons.filter(c=>new Date(c.expiry)<today).length;
+  animateNumber('kpiTotal', coupons.length);
+  animateNumber('kpiUsed', used, ' ₪');
+  animateNumber('kpiSpent', spent, ' ₪');
+  animateNumber('kpiExpired', expired);
+  renderExpiringStrip();
+}
+
+// Build the horizontal strip of soon-to-expire coupons (within 90 days).
+function renderExpiringStrip() {
+  const wrap = document.getElementById('expiringStripWrap');
+  const strip = document.getElementById('expiringStrip');
+  if (!wrap || !strip) return;
+  const soon = coupons
+    .map(c => {
+      const days = Math.ceil((new Date(c.expiry) - today) / (1000*60*60*24));
+      return {c, days};
+    })
+    .filter(x => x.days >= 0 && x.days <= 90 && (Number(x.c.remaining)||0) > 0)
+    .sort((a,b) => a.days - b.days);
+  if (!soon.length) { wrap.style.display = 'none'; strip.innerHTML = ''; return; }
+  wrap.style.display = 'block';
+  strip.innerHTML = soon.map(({c, days}) => {
+    const urgent = days < 30 ? 'urgent' : '';
+    const whenLabel = days === 0 ? 'פג היום!' : days === 1 ? 'מחר!' : `בעוד ${days} ימים`;
+    return `<div class="exp-mini ${urgent}" onclick="jumpToCoupon(${c.id})">
+      <div class="exp-name">${escapeHtml(c.desc)}</div>
+      <div class="exp-when">⏳ ${whenLabel}</div>
+      <div class="exp-meta">${escapeHtml(c.supplier)} · נשאר ${c.remaining} ₪ · תוקף ${escapeHtml(c.expiry)}</div>
+    </div>`;
+  }).join('');
+}
+
+// Switch to table view, scroll to a row, briefly highlight it.
+function jumpToCoupon(id) {
+  switchView('table');
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#tbody tr');
+    rows.forEach(tr => {
+      if (tr.onclick && tr.onclick.toString().includes('('+id+')')) {
+        tr.scrollIntoView({behavior:'smooth', block:'center'});
+        const orig = tr.style.boxShadow;
+        tr.style.transition = 'box-shadow 0.4s';
+        tr.style.boxShadow = 'inset 0 0 0 3px #3498db';
+        setTimeout(() => { tr.style.boxShadow = orig; }, 1800);
+      }
+    });
+  }, 100);
+}
+
+// Render the flippable cards grid.
+function renderCardGrid(rows) {
+  const grid = document.getElementById('cardGrid');
+  if (!grid) return;
+  if (!rows.length) { grid.innerHTML = '<div style="text-align:center;color:#95a5a6;padding:40px;grid-column:1/-1;">אין שוברים</div>'; return; }
+  function initials(s) {
+    const cleaned = String(s||'').trim();
+    if (!cleaned) return '?';
+    // Pick first 1-2 chars (Hebrew + Latin friendly)
+    return cleaned.slice(0,1).toUpperCase();
+  }
+  function colorFor(s) {
+    let h = 0;
+    for (const ch of String(s||'')) h = (h * 31 + ch.charCodeAt(0)) % 360;
+    return `linear-gradient(135deg, hsl(${h}, 65%, 55%), hsl(${(h+40)%360}, 65%, 45%))`;
+  }
+  grid.innerHTML = rows.map(c => {
+    const days = Math.ceil((new Date(c.expiry) - today) / (1000*60*60*24));
+    const urgent = (days >= 0 && days <= 30 && c.remaining > 0) ? 'urgent' : '';
+    return `<div class="coupon-card ${urgent}" onclick="this.classList.toggle('flipped')">
+      <div class="coupon-card-inner">
+        <div class="coupon-card-front">
+          <div class="initial" style="background:${colorFor(c.supplier)}">${escapeHtml(initials(c.supplier))}</div>
+          <div class="cc-desc">${escapeHtml(c.desc)}</div>
+          <div class="cc-supplier">${escapeHtml(c.supplier)}</div>
+          <div class="cc-amount ${c.remaining===0?'zero':''}">${c.remaining.toLocaleString()} ₪ נשאר</div>
+          <div class="cc-expiry">תוקף: ${escapeHtml(c.expiry)} ${statusBadge(c)}</div>
+        </div>
+        <div class="coupon-card-back">
+          <div><span class="label">שווי:</span> ${c.value} ₪</div>
+          <div><span class="label">שולם:</span> ${c.spent} ₪</div>
+          <div><span class="label">נשאר:</span> ${c.remaining} ₪</div>
+          <div><span class="label">סוג:</span> ${escapeHtml(c.type||'—')}</div>
+          <div><span class="label">תוקף:</span> ${escapeHtml(c.expiry)}</div>
+          <div><span class="label">מס׳ שובר:</span> ${escapeHtml(c.number||'—')}</div>
+          <div><span class="label">הערות:</span> ${escapeHtml(c.note||'—')}</div>
+          <div style="margin-top:8px;display:flex;gap:6px;" onclick="event.stopPropagation()">
+            <button class="btn btn-edit btn-sm" onclick="openForm(${c.id})">ערוך</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id})">מחק</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Dark-mode toggle (persists in localStorage)
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('coupons_theme', isDark ? 'dark' : 'light');
+}
+// Restore on load
+(function() {
+  if (localStorage.getItem('coupons_theme') === 'dark') {
+    document.body.classList.add('dark');
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
 
 function statusKey(c) {
   const d = new Date(c.expiry);
@@ -342,6 +701,7 @@ function applyFilter() {
     });
   }
   renderTable(rows);
+  renderCardGrid(rows);
   const af = document.getElementById('activeFilter');
   af.innerHTML = filter.type ? `<span class="chip">סינון גרף: ${filter.value}</span><span class="chip clear" onclick="clearFilter()">נקה ✕</span>` : '';
   document.querySelectorAll('th.sortable').forEach(th => {
@@ -380,6 +740,29 @@ function escapeHtml(s) {
   return String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+// Wrap matching substrings (case-insensitive) in <mark> for live search highlight.
+function highlightMatches(htmlSafeText) {
+  const q = (document.getElementById('search').value || '').trim();
+  if (!q) return htmlSafeText;
+  const safeQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  try {
+    const re = new RegExp('(' + safeQ + ')', 'gi');
+    return htmlSafeText.replace(re, '<mark class="search-hit">$1</mark>');
+  } catch(e) { return htmlSafeText; }
+}
+
+// Generate a stable color from a string (used for supplier badges).
+function colorForSupplier(s) {
+  let h = 0;
+  for (const ch of String(s||'')) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `linear-gradient(135deg, hsl(${h}, 65%, 55%), hsl(${(h+40)%360}, 65%, 45%))`;
+}
+function supplierInitial(s) {
+  const t = String(s||'').trim();
+  return t ? t.slice(0,1).toUpperCase() : '?';
+}
+
+
 function rowHighlightClass(c) {
   // Highlight rows expiring within 6 months (180 days). Already-expired rows get a stronger red.
   if (!c.expiry) return '';
@@ -400,8 +783,14 @@ function renderTable(rows) {
   }
   tb.innerHTML = rows.map(c => `
     <tr class="${rowHighlightClass(c)}" onclick="showDetail(${c.id})">
-      <td>${escapeHtml(c.desc)}</td><td>${escapeHtml(c.supplier)}</td>
-      <td>${c.value} ₪</td><td>${c.spent} ₪</td><td>${c.remaining} ₪</td>
+      <td>${highlightMatches(escapeHtml(c.desc))}</td>
+      <td><span class="supplier-cell">
+        <span class="supplier-badge" style="background:${colorForSupplier(c.supplier)}">${escapeHtml(supplierInitial(c.supplier))}</span>
+        <span>${highlightMatches(escapeHtml(c.supplier))}</span>
+      </span></td>
+      <td>${c.value} ₪</td>
+      <td>${c.spent} ₪</td>
+      <td>${c.remaining} ₪</td>
       <td>${escapeHtml(c.expiry)}</td><td>${statusBadge(c)}</td>
       <td onclick="event.stopPropagation()">
         <div class="row-actions">
@@ -426,10 +815,12 @@ function renderTable(rows) {
 }
 
 function switchView(view) {
-  document.body.classList.remove('view-charts','view-table');
+  document.body.classList.remove('view-charts','view-table','view-cards');
   document.body.classList.add('view-' + view);
   document.getElementById('navCharts').classList.toggle('active', view === 'charts');
   document.getElementById('navTable').classList.toggle('active', view === 'table');
+  const navCards = document.getElementById('navCards');
+  if (navCards) navCards.classList.toggle('active', view === 'cards');
 }
 
 function showDetail(id) {
