@@ -74,10 +74,44 @@
   #loginGate h2 { color:#2c3e50; margin:0;}
   #loginGate p { color:#7f8c8d; max-width:420px; text-align:center;}
   #loginErr { color:#c0392b; font-weight:600;}
-  #userBar { position:fixed; top:16px; right:16px; background:#fff; padding:8px 14px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:none; align-items:center; gap:10px; font-size:13px; z-index:150;}
-  #userBar.on { display:flex;}
-  #userBar img { width:28px; height:28px; border-radius:50%;}
-  #userBar button { background:#e74c3c; color:#fff; border:none; padding:4px 10px; border-radius:12px; cursor:pointer; font-size:12px;}
+  /* User bar: just the avatar circle. Click to open menu. */
+  #userBar { position:fixed; top:14px; right:14px; display:none; z-index:150;}
+  #userBar.on { display:block;}
+  #userBar #userAvatar {
+    width:38px; height:38px; border-radius:50%;
+    cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.18);
+    border:2px solid #fff; transition:transform 0.15s, box-shadow 0.15s;
+    display:block; object-fit:cover;
+  }
+  #userBar #userAvatar:hover { transform:scale(1.08); box-shadow:0 4px 14px rgba(0,0,0,0.25); }
+  body.dark #userBar #userAvatar { border-color:#1c2128; }
+
+  #userMenu {
+    position:absolute; top:46px; right:0;
+    background:rgba(255,255,255,0.95);
+    backdrop-filter:blur(16px) saturate(140%);
+    -webkit-backdrop-filter:blur(16px) saturate(140%);
+    border:1px solid rgba(255,255,255,0.6);
+    border-radius:12px; padding:12px 14px;
+    min-width:220px; max-width:280px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.18);
+    display:none; font-size:13px;
+  }
+  #userMenu.open { display:block; animation:menuIn 0.15s ease; }
+  @keyframes menuIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  body.dark #userMenu { background:rgba(28,33,40,0.95); border-color:rgba(255,255,255,0.08); color:#e4e6eb; }
+  #userMenu .email-line {
+    font-size:12px; color:#7f8c8d; word-break:break-word;
+    border-bottom:1px solid #ecf0f1; padding-bottom:10px; margin-bottom:10px;
+  }
+  body.dark #userMenu .email-line { color:#8b95a3; border-bottom-color:#2d3540; }
+  #userMenu button {
+    background:#e74c3c; color:#fff; border:none;
+    padding:8px 14px; border-radius:8px;
+    cursor:pointer; font-size:13px; font-weight:600;
+    width:100%; transition:opacity 0.15s;
+  }
+  #userMenu button:hover { opacity:0.88; }
 
   /* Row highlight for coupons expiring within 6 months — softer tint */
   tbody tr.expiring-soon td { background:#fff3cd !important; border-right:3px solid #f39c12; }
@@ -420,6 +454,11 @@
     /* Theme toggle — smaller, top corner */
     #themeToggle { top: 10px; left: 10px; width: 38px; height: 38px; font-size: 18px; }
 
+    /* User avatar a touch smaller on mobile */
+    #userBar { top: 10px; right: 10px; }
+    #userBar #userAvatar { width: 32px; height: 32px; }
+    #userMenu { top: 40px; }
+
     /* Status toast → top center */
     #status { left: 50%; right: auto; top: 60px; transform: translateX(-50%); }
     #status.show { transform: translateX(-50%); }
@@ -482,9 +521,11 @@
 </div>
 
 <div id="userBar">
-  <img id="userAvatar" src="" alt="">
-  <span id="userEmail"></span>
-  <button onclick="signOut()">התנתק</button>
+  <img id="userAvatar" src="" alt="" onclick="toggleUserMenu(event)">
+  <div id="userMenu">
+    <div class="email-line" id="userEmail"></div>
+    <button onclick="signOut()">🚪 התנתק</button>
+  </div>
 </div>
 
 <div id="status"></div>
@@ -1026,6 +1067,26 @@ function updateSearchBadge() {
 // Close search panel on Escape (in addition to existing detail/form modal close)
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSearchPanel();
+});
+
+// User profile menu: click avatar to toggle, click outside to close
+function toggleUserMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('userMenu');
+  if (menu) menu.classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  const bar = document.getElementById('userBar');
+  const menu = document.getElementById('userMenu');
+  if (bar && menu && menu.classList.contains('open') && !bar.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const m = document.getElementById('userMenu');
+    if (m) m.classList.remove('open');
+  }
 });
 
 function showDetail(id) {
