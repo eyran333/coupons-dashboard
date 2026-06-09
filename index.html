@@ -2,6 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>דאשבורד השוברים שלנו</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -321,6 +322,146 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
 
+  /* === MOBILE SEARCH OVERLAY === */
+  #navSearch { display: none; position: relative; }
+  .search-badge {
+    position: absolute; top: -2px; right: -2px;
+    background: #e74c3c; color: #fff;
+    min-width: 18px; height: 18px; border-radius: 9px;
+    font-size: 10px; font-weight: 700; padding: 0 5px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  #searchOverlay {
+    display: none; position: fixed; inset: 0; z-index: 240;
+    background: rgba(0,0,0,0.5);
+    align-items: flex-start; justify-content: center;
+    padding: 60px 12px 12px;
+  }
+  #searchOverlay.open { display: flex; }
+  #searchPanel {
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    width: 100%; max-width: 500px;
+    padding: 18px 16px 20px; border-radius: 16px;
+    max-height: 80vh; overflow: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: slideDown 0.25s ease;
+  }
+  @keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  body.dark #searchPanel { background: rgba(28,33,40,0.97); }
+  .search-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; padding-bottom: 10px;
+    border-bottom: 1px solid #ecf0f1;
+  }
+  body.dark .search-header { border-bottom-color: #2d3540; }
+  .search-header h3 { margin: 0; font-size: 16px; color: #2c3e50; }
+  body.dark .search-header h3 { color: #e4e6eb; }
+  .search-header .close { font-size: 26px; color: #95a5a6; }
+  /* When filter-bar is moved into the overlay, stack it vertically */
+  #searchSlot .filter-bar {
+    flex-direction: column; align-items: stretch; gap: 10px; margin: 0;
+  }
+  #searchSlot .filter-bar input,
+  #searchSlot .filter-bar select { width: 100%; min-width: 0; font-size: 15px; padding: 10px 12px; }
+  #searchSlot .filter-bar button { padding: 10px 16px; font-size: 14px; }
+
+  /* =========================================
+     === MOBILE OVERRIDES (≤ 700px screens) ===
+     Desktop layout above is untouched.
+     ========================================= */
+  @media (max-width: 700px) {
+    /* Tighten outer padding, leave room for bottom nav */
+    body { padding: 16px 12px 88px; padding-right: 12px; }
+    h1 { font-size: 22px; margin-top: 28px; }
+    .subtitle { font-size: 13px; margin-bottom: 14px; }
+
+    /* KPIs: 4 → 2×2 grid */
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi { min-width: 0; padding: 12px 14px; }
+    .kpi .value { font-size: 20px; }
+    .kpi .label { font-size: 11px; }
+
+    /* Charts: 2 columns → 1 column stack */
+    .grid { grid-template-columns: 1fr; gap: 14px; max-width: 100%; }
+    .card { padding: 14px; }
+    canvas { max-height: 280px; }
+
+    /* Right sidebar → bottom navigation bar */
+    .sidebar {
+      position: fixed; top: auto; right: 0; left: 0; bottom: 0;
+      flex-direction: row; justify-content: space-around;
+      padding: 8px 10px; gap: 6px;
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      z-index: 220;
+    }
+    body.dark .sidebar { background: rgba(15,20,25,0.95); box-shadow: 0 -2px 12px rgba(0,0,0,0.5); }
+    .sidebar button { flex: 1; width: auto; padding: 8px 6px; font-size: 12px; }
+    .sidebar button .ico { font-size: 20px; }
+
+    /* On mobile, the table view shows the cards stack instead of the wide table.
+       Hide the dedicated cards button — שוברים now shows cards. */
+    body.view-table .coupons-card { display: none; }
+    body.view-table .cards-card { display: block; }
+    #navCards { display: none; }
+    /* Show the search button in the bottom nav */
+    #navSearch { display: flex; }
+    /* Hide the inline filter-bar on mobile — it's only accessible via the search overlay */
+    .coupons-card .filter-bar { display: none; }
+
+    /* Theme toggle — smaller, top corner */
+    #themeToggle { top: 10px; left: 10px; width: 38px; height: 38px; font-size: 18px; }
+
+    /* Status toast → top center */
+    #status { left: 50%; right: auto; top: 60px; transform: translateX(-50%); }
+    #status.show { transform: translateX(-50%); }
+
+    /* Form modal — 1 column fields, near-fullscreen */
+    .form-grid { grid-template-columns: 1fr; gap: 10px; }
+    .modal { width: 96%; max-height: 92vh; padding: 18px; }
+
+    /* Detail modal as bottom sheet feel */
+    .modal-bg { align-items: flex-end; }
+    .modal-bg .modal { border-radius: 16px 16px 0 0; max-height: 88vh; }
+
+    /* Login gate */
+    #loginGate { padding: 24px; }
+    #loginGate h2 { font-size: 20px; }
+    #loginGate p { font-size: 14px; }
+
+    /* Cards grid — smaller cards, fit 1-2 columns on phone */
+    .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .coupon-card { height: 180px; }
+    .coupon-card-front, .coupon-card-back { padding: 12px; }
+    .coupon-card-front .cc-desc { font-size: 13px; }
+    .coupon-card-front .cc-amount { font-size: 17px; }
+
+    /* Expiring strip — slightly tighter cards */
+    .exp-mini { min-width: 200px; padding: 10px 12px; }
+    .exp-strip-title { font-size: 12px; }
+
+    /* Filter bar — search takes full row */
+    .filter-bar { gap: 6px; }
+    .filter-bar input { min-width: 100%; }
+    .filter-bar select { flex: 1; min-width: 110px; }
+
+  }
+
+  /* Very small phones (≤ 380px) */
+  @media (max-width: 380px) {
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .kpi .value { font-size: 18px; }
+    h1 { font-size: 20px; }
+    .card-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -369,9 +510,23 @@
   <button id="navCards" onclick="switchView('cards')">
     <span class="ico">🎴</span><span>כרטיסיות</span>
   </button>
+  <button id="navSearch" onclick="toggleSearchPanel()">
+    <span class="ico">🔍</span><span>חיפוש</span>
+    <span id="searchBadge" class="search-badge" style="display:none;">0</span>
+  </button>
   <button id="navCharts" onclick="switchView('charts')">
     <span class="ico">📊</span><span>גרפים</span>
   </button>
+</div>
+
+<div id="searchOverlay" onclick="if(event.target.id==='searchOverlay')closeSearchPanel()">
+  <div id="searchPanel">
+    <div class="search-header">
+      <h3>🔍 חיפוש וסינון</h3>
+      <button class="close" onclick="closeSearchPanel()">×</button>
+    </div>
+    <div id="searchSlot"><!-- filter-bar gets moved here when overlay opens --></div>
+  </div>
 </div>
 
 <div class="grid">
@@ -708,6 +863,7 @@ function applyFilter() {
     const arrow = th.querySelector('.arrow');
     arrow.textContent = th.dataset.sort === sortState.key ? (sortState.dir===1 ? '▲' : '▼') : '';
   });
+  updateSearchBadge();
 }
 function clearFilter() { filter={type:null,value:null}; applyFilter(); }
 function resetFilters() {
@@ -822,6 +978,55 @@ function switchView(view) {
   const navCards = document.getElementById('navCards');
   if (navCards) navCards.classList.toggle('active', view === 'cards');
 }
+
+// ===== Mobile search overlay =====
+function openSearchPanel() {
+  const slot = document.getElementById('searchSlot');
+  const filterBar = document.querySelector('.coupons-card .filter-bar');
+  if (filterBar && slot && !slot.contains(filterBar)) {
+    slot.appendChild(filterBar);
+  }
+  document.getElementById('searchOverlay').classList.add('open');
+  document.getElementById('navSearch').classList.add('active');
+  setTimeout(() => {
+    const s = document.getElementById('search'); if (s) s.focus();
+  }, 100);
+}
+function closeSearchPanel() {
+  document.getElementById('searchOverlay').classList.remove('open');
+  document.getElementById('navSearch').classList.remove('active');
+  // Move filter-bar back into the coupons-card
+  const slot = document.getElementById('searchSlot');
+  const filterBar = slot && slot.querySelector('.filter-bar');
+  if (filterBar) {
+    const card = document.querySelector('.coupons-card');
+    const h2 = card && card.querySelector('h2');
+    if (h2) h2.insertAdjacentElement('afterend', filterBar);
+  }
+}
+function toggleSearchPanel() {
+  const overlay = document.getElementById('searchOverlay');
+  if (overlay.classList.contains('open')) closeSearchPanel();
+  else openSearchPanel();
+}
+
+// Update the small red badge on the 🔍 button with the count of active filters.
+function updateSearchBadge() {
+  const badge = document.getElementById('searchBadge');
+  if (!badge) return;
+  const ids = ['search','filterSupplier','filterStatus','filterYear'];
+  const count = ids.filter(id => {
+    const el = document.getElementById(id);
+    return el && el.value && el.value.trim() !== '';
+  }).length;
+  if (count > 0) { badge.textContent = count; badge.style.display = 'flex'; }
+  else { badge.style.display = 'none'; }
+}
+
+// Close search panel on Escape (in addition to existing detail/form modal close)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSearchPanel();
+});
 
 function showDetail(id) {
   const c = coupons.find(x => x.id===id); if (!c) return;
