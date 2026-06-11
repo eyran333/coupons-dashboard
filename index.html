@@ -356,6 +356,21 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
 
+  /* === MOBILE FAB (floating "add" button) === */
+  #fabAdd {
+    display: none;  /* hidden on desktop — the inline "+ הוסף שובר" button is enough */
+    position: fixed; bottom: 84px; left: 16px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: #fff; border: none; font-size: 30px; font-weight: 300;
+    cursor: pointer; z-index: 100;
+    align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(39,174,96,0.5);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  #fabAdd:hover { transform: scale(1.06); box-shadow: 0 6px 22px rgba(39,174,96,0.6); }
+  #fabAdd:active { transform: scale(0.95); }
+
   /* === MOBILE SEARCH OVERLAY === */
   #navSearch { display: none; position: relative; }
   .search-badge {
@@ -459,6 +474,9 @@
     #userBar #userAvatar { width: 32px; height: 32px; }
     #userMenu { top: 40px; }
 
+    /* Show the floating "+" button on mobile */
+    #fabAdd { display: flex; }
+
     /* Status toast → top center */
     #status { left: 50%; right: auto; top: 60px; transform: translateX(-50%); }
     #status.show { transform: translateX(-50%); }
@@ -508,6 +526,7 @@
 
 
 <button id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<button id="fabAdd" onclick="openForm()" title="הוסף שובר חדש">+</button>
 
 <div id="expiringStripWrap" style="display:none;">
   <div class="exp-strip-title">⏰ <span>שוברים שפגים ב-90 הימים הקרובים</span></div>
@@ -627,6 +646,7 @@
     <div id="detailBody"></div>
     <div class="form-actions">
       <button class="btn btn-edit" id="detailEditBtn">✎ ערוך</button>
+      <button class="btn btn-primary" id="detailDupBtn">📋 שכפל</button>
       <button class="btn btn-danger" id="detailDelBtn">🗑 מחק</button>
       <button class="btn btn-secondary" onclick="closeDetail()">סגור</button>
     </div>
@@ -802,6 +822,17 @@ function jumpToCoupon(id) {
 }
 
 // Render the flippable cards grid.
+// Tap behavior depends on device:
+//   • Desktop (>700px): flip the card to see edit/delete on the back
+//   • Mobile (≤700px): open the detail modal (easier to read & all CRUD buttons together)
+function couponCardClick(id, el) {
+  if (window.innerWidth <= 700) {
+    showDetail(id);
+  } else {
+    el.classList.toggle('flipped');
+  }
+}
+
 function renderCardGrid(rows) {
   const grid = document.getElementById('cardGrid');
   if (!grid) return;
@@ -820,7 +851,7 @@ function renderCardGrid(rows) {
   grid.innerHTML = rows.map(c => {
     const days = Math.ceil((new Date(c.expiry) - today) / (1000*60*60*24));
     const urgent = (days >= 0 && days <= 30 && c.remaining > 0) ? 'urgent' : '';
-    return `<div class="coupon-card ${urgent}" onclick="this.classList.toggle('flipped')">
+    return `<div class="coupon-card ${urgent}" onclick="couponCardClick(${c.id}, this)">
       <div class="coupon-card-inner">
         <div class="coupon-card-front">
           <div class="initial" style="background:${colorFor(c.supplier)}">${escapeHtml(initials(c.supplier))}</div>
@@ -1099,6 +1130,7 @@ function showDetail(id) {
     ['הערות',escapeHtml(c.note)],['מידע נוסף',escapeHtml(c.extra)||'—']];
   document.getElementById('detailBody').innerHTML = fields.map(([l,v])=>`<div class="row"><div class="label">${l}</div><div class="val">${v}</div></div>`).join('');
   document.getElementById('detailEditBtn').onclick = () => { closeDetail(); openForm(id); };
+  document.getElementById('detailDupBtn').onclick = () => { closeDetail(); duplicateCoupon(id); };
   document.getElementById('detailDelBtn').onclick = () => { closeDetail(); deleteCoupon(id); };
   document.getElementById('detailBg').classList.add('open');
 }
