@@ -425,13 +425,14 @@
      Desktop layout above is untouched.
      ========================================= */
   @media (max-width: 700px) {
-    /* Tighten outer padding, leave room for bottom nav */
-    body { padding: 16px 12px 88px; padding-right: 12px; }
+    /* Tighten outer padding, leave room for bottom nav.
+       Make body a flex column so we can reorder blocks on mobile. */
+    body { padding: 16px 12px 88px; padding-right: 12px; display: flex; flex-direction: column; }
     h1 { font-size: 22px; margin-top: 28px; }
     .subtitle { font-size: 13px; margin-bottom: 14px; }
 
-    /* KPIs: 4 → 2×2 grid */
-    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    /* KPIs: 4 → 2×2 grid, moved to the BOTTOM of the page (after the coupon list) */
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; order: 90; margin-top: 8px; margin-bottom: 0; }
     .kpi { min-width: 0; padding: 12px 14px; }
     .kpi .value { font-size: 20px; }
     .kpi .label { font-size: 11px; }
@@ -509,11 +510,19 @@
     #loginGate h2 { font-size: 20px; }
     #loginGate p { font-size: 14px; }
 
-    /* Cards grid — smaller cards, fit 1-2 columns on phone */
+    /* Cards grid — on mobile the cards don't flip (tap opens the detail sheet),
+       so render them flat with auto height and show the FULL description. */
     .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-    .coupon-card { height: 180px; }
+    .coupon-card { height: auto; perspective: none; }
+    .coupon-card-inner { position: static; transform: none !important; }
+    .coupon-card-front { position: relative; inset: auto; backface-visibility: visible; height: auto; }
+    .coupon-card-back { display: none; }   /* back not reachable on mobile — modal is used instead */
     .coupon-card-front, .coupon-card-back { padding: 12px; }
-    .coupon-card-front .cc-desc { font-size: 13px; }
+    .coupon-card-front .cc-desc {
+      font-size: 13px;
+      -webkit-line-clamp: unset; display: block;
+      overflow: visible; text-overflow: clip; white-space: normal;
+    }
     .coupon-card-front .cc-amount { font-size: 17px; }
 
     /* Expiring strip — slightly tighter cards */
