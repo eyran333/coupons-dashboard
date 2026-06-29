@@ -457,21 +457,22 @@
     .sidebar button { flex: 1; width: auto; padding: 8px 6px; font-size: 12px; }
     .sidebar button .ico { font-size: 20px; }
 
-    /* On mobile, the "שוברים" view shows: an always-visible live search row,
+    /* On mobile, the "שוברים" view shows: a live search row ON TOP,
        then the card stack (the wide table is hidden). */
-    body.view-table .coupons-card { display: block; }       /* keep visible — it holds the search row */
-    body.view-table .coupons-card .tbl-wrap { display: none; }  /* hide the wide table */
-    body.view-table .coupons-card .toolbar { display: none; }   /* +הוסף/רענן hidden — FAB + nav used instead */
+    body.view-table .coupons-card { display: block; order: -1; }  /* order:-1 → search row sits on TOP */
+    body.view-table .coupons-card .tbl-wrap { display: none; }    /* hide the wide table */
+    body.view-table .coupons-card .toolbar { display: none; }     /* +הוסף/רענן hidden — FAB used instead */
+    body.view-table .coupons-card h2 { display: none; }           /* no header, just the search box */
     body.view-table .cards-card { display: block; }
-    body.view-table .cards-card h2 { display: none; }       /* avoid a duplicate header */
+    body.view-table .cards-card h2 { display: none; }
     #navCards { display: none; }
     #navSearch { display: none; }   /* no search button — search is an inline live row now */
 
-    /* Inline live-search row (filters results as you type) */
-    .coupons-card .filter-bar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 4px; }
-    .coupons-card .filter-bar input,
-    .coupons-card .filter-bar select { width: 100%; min-width: 0; font-size: 15px; padding: 10px 12px; }
-    .coupons-card .filter-bar .btn { width: 100%; padding: 9px; }
+    /* Search-only row: hide the filter dropdowns + clear button, keep just the search box */
+    .coupons-card .filter-bar { display: block; margin-bottom: 4px; }
+    .coupons-card .filter-bar select,
+    .coupons-card .filter-bar > .btn { display: none; }
+    .coupons-card .filter-bar input { width: 100%; min-width: 0; font-size: 15px; padding: 10px 12px; box-sizing: border-box; }
 
     /* Theme toggle — smaller, top corner */
     #themeToggle { top: 10px; left: 10px; width: 38px; height: 38px; font-size: 18px; }
